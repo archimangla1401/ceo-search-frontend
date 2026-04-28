@@ -5,7 +5,7 @@ import { useState } from "react";
 export default function Home() {
   const [company, setCompany] = useState("");
   const [startDate, setStartDate] = useState("2026-03-01");
-  const [endDate, setEndDate] = useState("2026-03-15");
+  const [endDate, setEndDate] = useState("2026-03-31");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
 
@@ -23,96 +23,157 @@ export default function Home() {
     setLoading(true);
     setResult(null);
 
-    // MOCK RESPONSE (we will replace with backend later)
-    setTimeout(() => {
-      const hasChange = true;
-
-      if (hasChange) {
-        setResult({
+    try {
+      const response = await fetch("http://127.0.0.1:8000/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           company_name: company,
-          ceo_change: "YES",
-          screening_notes: "Sample CEO change detected in selected timeline.",
-          details: {
-            departing_ceo_name: "John Doe",
-            incoming_ceo_name: "Jane Smith",
-            announcement_date: startDate,
-            reason: "Retirement",
-          },
-        });
-      } else {
-        setResult({
-          company_name: company,
-          ceo_change: "NO",
-          screening_notes: "No CEO change found.",
-          details: null,
-        });
-      }
+          start_date: startDate,
+          end_date: endDate,
+        }),
+      });
 
+      const data = await response.json();
+      setResult(data);
+    } catch (error) {
+      alert("Backend error. Make sure FastAPI is running on port 8000.");
+      console.error(error);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
-      <div className="w-full max-w-2xl bg-white p-8 rounded-xl shadow">
-        <h1 className="text-2xl font-bold mb-6">
-          CEO Change Search
-        </h1>
+    <main className="min-h-screen bg-[#F7F7F7]">
+      <div className="bg-[#C00000] px-8 py-8 text-white shadow">
+        <div className="mx-auto max-w-5xl">
+          <p className="text-sm uppercase tracking-[0.25em] text-white/80">
+            CEO Alerts
+          </p>
+          <h1 className="mt-2 text-4xl font-bold">CEO Change Search</h1>
+          <p className="mt-2 max-w-2xl text-white/85">
+            Search a company and timeline to detect CEO changes and extract
+            transition details.
+          </p>
+        </div>
+      </div>
 
-        <input
-          placeholder="Enter Company Name"
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
-          className="w-full p-3 border rounded mb-4"
-        />
+      <section className="mx-auto max-w-5xl px-6 py-10">
+        <div className="rounded-2xl bg-white p-8 shadow-lg border border-gray-100">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Search Criteria
+          </h2>
 
-        <div className="flex gap-4 mb-4">
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="w-1/2 p-3 border rounded"
-          />
+          <div className="mt-6">
+            <label className="block text-sm font-medium text-gray-700">
+              Company Name
+            </label>
+            <input
+              placeholder="e.g., BT Group, Disney, HDFC Bank"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              className="mt-2 w-full rounded-lg border border-gray-300 p-3 outline-none focus:border-[#C00000] focus:ring-2 focus:ring-[#C00000]/20"
+            />
+          </div>
 
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="w-1/2 p-3 border rounded"
-          />
+          <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="mt-2 w-full rounded-lg border border-gray-300 p-3 outline-none focus:border-[#C00000] focus:ring-2 focus:ring-[#C00000]/20"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                End Date
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="mt-2 w-full rounded-lg border border-gray-300 p-3 outline-none focus:border-[#C00000] focus:ring-2 focus:ring-[#C00000]/20"
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={handleSearch}
+            disabled={loading}
+            className="mt-7 w-full rounded-lg bg-[#C00000] px-5 py-3 font-semibold text-white shadow hover:bg-[#A00000] disabled:bg-gray-400"
+          >
+            {loading ? "Checking CEO change..." : "Check CEO Change"}
+          </button>
         </div>
 
-        <button
-          onClick={handleSearch}
-          className="w-full bg-black text-white p-3 rounded"
-        >
-          {loading ? "Checking..." : "Check CEO Change"}
-        </button>
-
         {result && (
-          <div className="mt-6 p-4 border rounded">
-            <p><b>Company:</b> {result.company_name}</p>
+          <div className="mt-8 rounded-2xl bg-white p-8 shadow-lg border border-gray-100">
+            <div className="flex items-center justify-between gap-4 border-b pb-4">
+              <div>
+                <p className="text-sm text-gray-500">Result</p>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {company}
+                </h2>
+              </div>
 
-            <p>
-              <b>CEO Change:</b>{" "}
-              <span className={result.ceo_change === "YES" ? "text-green-600" : "text-red-600"}>
-                {result.ceo_change}
+              <span
+                className={
+                  result.ceo_change === "YES"
+                    ? "rounded-full bg-[#C00000]/10 px-4 py-2 font-bold text-[#C00000]"
+                    : "rounded-full bg-gray-100 px-4 py-2 font-bold text-gray-700"
+                }
+              >
+                CEO Change: {result.ceo_change}
               </span>
-            </p>
+            </div>
 
-            <p><b>Notes:</b> {result.screening_notes}</p>
+            <div className="mt-5 rounded-xl bg-gray-50 p-4">
+              <p className="text-sm font-semibold text-gray-700">
+                Screening Notes
+              </p>
+              <p className="mt-1 text-gray-900">
+                {result.screening_notes || "-"}
+              </p>
+
+              {result.message && (
+                <p className="mt-3 rounded-lg bg-yellow-50 p-3 text-sm text-yellow-800">
+                  {result.message}
+                </p>
+              )}
+            </div>
 
             {result.ceo_change === "YES" && result.details && (
-              <div className="mt-4">
-                <p><b>Departing CEO:</b> {result.details.departing_ceo_name}</p>
-                <p><b>Incoming CEO:</b> {result.details.incoming_ceo_name}</p>
-                <p><b>Date:</b> {result.details.announcement_date}</p>
-                <p><b>Reason:</b> {result.details.reason}</p>
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  CEO Transition Details
+                </h3>
+
+                <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
+                  {Object.entries(result.details).map(([key, value], index) => (
+                    <div
+                      key={key}
+                      className={`grid grid-cols-1 gap-2 px-4 py-3 md:grid-cols-2 ${
+                        index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                      }`}
+                    >
+                      <p className="font-medium capitalize text-gray-700">
+                        {key.replaceAll("_", " ")}
+                      </p>
+                      <p className="text-gray-900">{String(value || "-")}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
         )}
-      </div>
+      </section>
     </main>
   );
 }
